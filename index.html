@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מביא המקורות</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700&family=Heebo:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #F1F3F2;
+  --ink: #16212B;
+  --muted: #5B6975;
+  --rule: #C8D0D4;
+  --accent: #1D5C63;
+  --warn: #9B4A00;
+  --field: #E7ECEB;
+  --serif: "Frank Ruhl Libre", "David", "Times New Roman", serif;
+  --sans: "Heebo", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #12181D;
+    --ink: #E7ECEE;
+    --muted: #9AA7B0;
+    --rule: #2B363E;
+    --accent: #7CC4CB;
+    --warn: #E8A56A;
+    --field: #1A232A;
+  }
+}
+* { box-sizing: border-box; }
+html { background: var(--paper); }
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.55;
+}
+main { max-width: 820px; margin: 0 auto; padding: 40px 20px 96px; }
+h1 {
+  font-family: var(--serif);
+  font-weight: 700;
+  font-size: clamp(38px, 8vw, 56px);
+  line-height: 1.1;
+  margin: 0 0 8px;
+  letter-spacing: -0.01em;
+}
+.lede { margin: 0 0 32px; color: var(--muted); max-width: 46ch; }
+
+.inputs { display: grid; gap: 14px; }
+.drop {
+  display: block;
+  border: 1.5px dashed var(--rule);
+  background: var(--field);
+  padding: 22px 20px;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.drop:hover, .drop.over, .drop:focus-within { border-color: var(--accent); }
+.drop .t { display: block; font-weight: 600; }
+.drop .h { display: block; color: var(--muted); font-size: 15px; }
+.drop .f { display: block; color: var(--accent); font-weight: 600; margin-top: 6px; }
+.drop input { position: absolute; opacity: 0; pointer-events: none; }
+.drop.main { padding: 34px 20px; }
+.drop.main .t { font-size: 22px; }
+
+#status { min-height: 1.6em; margin: 16px 0 0; color: var(--muted); }
+#status.warn { color: var(--warn); }
+button {
+  font: inherit;
+  font-weight: 600;
+  padding: 12px 22px;
+  border: 1.5px solid var(--accent);
+  background: var(--accent);
+  color: var(--paper);
+  border-radius: 2px;
+  cursor: pointer;
+}
+button.quiet { background: transparent; color: var(--accent); }
+button:disabled { opacity: .4; cursor: not-allowed; }
+button:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+#run { margin-top: 10px; }
+
+#progress { margin-top: 28px; }
+.bar { height: 4px; background: var(--rule); margin-top: 8px; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--accent); }
+
+#summary { font-weight: 600; margin: 44px 0 14px; }
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+h2 {
+  font-family: var(--serif);
+  font-size: 26px;
+  margin: 40px 0 6px;
+  padding-top: 18px;
+  border-top: 2px solid var(--ink);
+}
+
+.src {
+  display: grid;
+  grid-template-columns: 11.5rem 1fr;
+  gap: 0 22px;
+  padding: 22px 0;
+  border-top: 1px solid var(--rule);
+}
+h2 + .src { border-top: 0; }
+.margin { font-size: 15px; line-height: 1.4; padding-inline-end: 18px; border-inline-end: 1px solid var(--rule); }
+.margin .num { display: block; font-family: var(--serif); font-size: 30px; font-weight: 700; line-height: 1; margin-bottom: 8px; }
+.margin .work { display: block; font-weight: 600; }
+.margin .loc { display: block; color: var(--muted); }
+.body .txt { font-family: var(--serif); font-size: 21px; line-height: 1.8; margin: 0 0 10px; max-width: 62ch; }
+.body .meta { color: var(--muted); font-size: 14px; margin: 6px 0 0; }
+.body .note { color: var(--warn); font-size: 14px; margin: 6px 0 0; }
+.body .err { color: var(--warn); font-weight: 600; margin: 0 0 6px; }
+.body .open { color: var(--accent); font-size: 15px; font-weight: 600; }
+.src.fail .num { color: var(--warn); }
+
+@media (max-width: 620px) {
+  .src { grid-template-columns: 1fr; }
+  .margin { border-inline-end: 0; padding-inline-end: 0; padding-bottom: 10px; margin-bottom: 8px; border-bottom: 1px solid var(--rule); }
+  .margin .num { display: inline; font-size: 24px; margin-inline-end: 10px; }
+  .margin .work { display: inline; }
+  .body .txt { font-size: 20px; }
+}
+@media print {
+  body { background: #fff; color: #000; }
+  .inputs, #status, #run, #progress, .toolbar, .open { display: none !important; }
+  .src { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>מביא המקורות</h1>
+  <p class="lede">מעלים את רשימת המקורות של הדף ומקבלים את הטקסטים מספריא, בסדר של הדף, עם קישור לכל מקור.</p>
+
+  <section class="inputs" aria-label="העלאת קבצים">
+    <label class="drop main" id="refsDrop">
+      <span class="t">רשימת המקורות</span>
+      <span class="h">גרור לכאן קובץ refs.json, או לחץ לבחירה</span>
+      <span class="f" id="refsName"></span>
+      <input type="file" id="refsFile" accept=".json,application/json">
+    </label>
+    <label class="drop" id="docDrop">
+      <span class="t">דף המקורות המקורי</span>
+      <span class="h">קובץ docx. נדרש רק אם בדף יש מקורות שכבר מובאים בתוכו</span>
+      <span class="f" id="docName"></span>
+      <input type="file" id="docFile" accept=".docx">
+    </label>
+  </section>
+
+  <p id="status" role="status" aria-live="polite"></p>
+  <button id="run" disabled>הבא את המקורות</button>
+
+  <section id="progress" hidden>
+    <div id="progressText"></div>
+    <div class="bar"><i id="progressBar"></i></div>
+  </section>
+
+  <section id="results" hidden>
+    <p id="summary"></p>
+    <div class="toolbar">
+      <button id="dl" class="quiet" disabled>הורד כקובץ Word</button>
+      <button id="print" class="quiet">הדפס</button>
+    </div>
+    <div id="list"></div>
+  </section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+'use strict';
+
+/* ------------------------------------------------------------------ ספריא -- */
+const API = 'https://www.sefaria.org/api';
+const LINE_LEVEL = /^(Rashi|Tosafot) on .+ \d+[ab]$/;
+const dafCache = new Map();
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function flatten(x) {
+  if (x == null) return [];
+  if (typeof x === 'string') return [x];
+  return Array.isArray(x) ? x.flatMap(flatten) : [];
+}
+
+function decodeEntities(s) {
+  return new DOMParser().parseFromString(s, 'text/html').documentElement.textContent || '';
+}
+
+function clean(s) {
+  s = s.replace(/<sup[^>]*class="footnote-marker"[^>]*>[\s\S]*?<\/sup>\s*<i[^>]*class="footnote"[^>]*>[\s\S]*?<\/i>/g, '');
+  s = s.replace(/<br\s*\/?>/g, ' ');
+  s = s.replace(/<[^>]+>/g, '');
+  return decodeEntities(s).replace(/\s+/g, ' ').trim();
+}
+
+/* צורת השוואה: בלי ניקוד, בלי פיסוק; "רבי" כמילה שלמה = "ר" */
+function norm(s) {
+  s = s.replace(/[\u0591-\u05C7]/g, '');
+  s = s.replace(/[^\u05D0-\u05EA ]/g, ' ');
+  s = s.replace(/(^|[^\u05D0-\u05EA])רבי(?![\u05D0-\u05EA])/g, '$1ר');
+  return s.replace(/\s+/g, ' ').trim();
+}
+/* צורה סלחנית עוד יותר: בלי ו' וי', כדי שכתיב מלא וחסר לא ימנע התאמה */
+function skel(s) {
+  return norm(s).replace(/[וי]/g, '').replace(/\s+/g, ' ').trim();
+}
+/* הביטוי המלא, ואחר כך גרסאות מקוצרות שלו */
+function variants(words) {
+  const w = skel(words).split(' ').filter(Boolean);
+  const out = [w.join(' ')];
+  for (let i = 1; i < w.length - 1; i++) out.push(w.slice(i).join(' '));
+  for (let j = w.length - 1; j > 1; j--) out.push(w.slice(0, j).join(' '));
+  return out.filter(Boolean);
+}
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+async function fetchJson(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+
+function encRef(ref) {
+  return encodeURIComponent(ref).replace(/%3A/g, ':').replace(/%2C/g, ',');
+}
+
+async function fetchRef(ref) {
+  const data = await fetchJson(`${API}/texts/${encRef(ref)}?context=0&commentary=0`);
+  if (data.error) throw new Error(data.error);
+  const segs = flatten(data.he).map(clean).filter(Boolean);
+  if (!segs.length) throw new Error('no Hebrew text returned');
+  return [data.ref || ref, segs];
+}
+
+async function resolveName(query) {
+  const d = await fetchJson(`${API}/name/${encodeURIComponent(query)}`);
+  return d.is_ref && d.ref ? d.ref : null;
+}
+
+/* מנסה: ההפניה כמו שהיא, אחר כך חיפוש בספריא לפי ההפניה, ואחר כך לפי השם בעברית */
+async function getSegments(src) {
+  const attempts = [];
+  if (src.sefaria_ref) {
+    attempts.push(['direct', src.sefaria_ref]);
+    attempts.push(['name', src.sefaria_ref]);
+  }
+  attempts.push(['name', `${src.work_he} ${src.location_he}`.trim()]);
+  let lastErr = 'not found';
+  for (const [kind, q] of attempts) {
+    try {
+      const ref = kind === 'direct' ? q : await resolveName(q);
+      if (!ref) { lastErr = `Sefaria did not recognize: ${q}`; continue; }
+      return await fetchRef(ref);
+    } catch (e) { lastErr = String((e && e.message) || e); }
+    await sleep(300);
+  }
+  throw new Error(lastErr);
+}
+
+/* רש"י ותוספות בנויים בספריא לפי שורות בגמרא. הפניה לדף שלם מחזירה רק את השורה
+   הראשונה, לכן עוברים שורה אחרי שורה עד שנגמרות ההערות (שש בקשות במקביל). */
+async function fetchDafCommentary(ref) {
+  if (dafCache.has(ref)) return [ref, dafCache.get(ref)];
+  const out = [];
+  let misses = 0, lastErr = 'no commentary found', n = 1;
+  outer: while (n <= 120) {
+    const batch = [];
+    for (let i = 0; i < 6 && n + i <= 120; i++) batch.push(n + i);
+    const results = await Promise.all(batch.map((k) =>
+      fetchRef(`${ref}:${k}`).then((r) => ({ ok: true, segs: r[1] }),
+                                  (e) => ({ ok: false, err: String((e && e.message) || e) }))));
+    for (const r of results) {
+      if (r.ok) { out.push(...r.segs); misses = 0; }
+      else {
+        lastErr = r.err; misses++;
+        if ((out.length && misses >= 8) || misses >= 12) break outer;
+      }
+    }
+    n += batch.length;
+  }
+  if (!out.length) throw new Error(lastErr);
+  dafCache.set(ref, out);
+  return [ref, out];
+}
+
+function nextAmud(ref) {
+  const m = ref.match(/^(.+ )(\d+)([ab])$/);
+  if (!m) return null;
+  return m[3] === 'a' ? `${m[1]}${m[2]}b` : `${m[1]}${+m[2] + 1}a`;
+}
+const firstWords = (segs, k = 15) => segs.slice(0, k).map((s) => s.split(/\s+/).slice(0, 3).join(' ')).join(' | ');
+const letters = (s) => s.split(/\d/)[0].replace(/[^A-Za-z]/g, '').toLowerCase(); // שם הספר בלבד
+
+/* ------------------------------------------------------- בחירת קטע מדויק -- */
+function pickDibbur(segs, dh) {
+  const d = skel(dh);
+  const start = new RegExp('^' + escapeRe(d) + '(\\s|$)');
+  const near = new RegExp('(^|\\s)' + escapeRe(d) + '(\\s|$)');
+  let hits = segs.filter((s) => start.test(skel(s)));
+  if (!hits.length) hits = segs.filter((s) => near.test(skel(s).slice(0, d.length + 40)));
+  return hits;
+}
+
+/* חיתוך לפי "מהמילים ... עד ...". החיתוך הוא ברמת מקטע, לא ברמת מילה. */
+function pickRange(segs, start, end, isCommentary) {
+  const find = (words, begin) => {
+    for (const probe of variants(words)) {
+      for (let i = begin; i < segs.length; i++) if (skel(segs[i]).includes(probe)) return i;
+    }
+    return null;
+  };
+  let i0 = 0;
+  if (start) {
+    i0 = find(start, 0);
+    if (i0 === null) {
+      if (isCommentary) return [[], "המילים 'מהמילים' לא נמצאו בפירוש"];
+      return [segs, "המילים 'מהמילים' לא נמצאו, הובא הטקסט כולו"];
+    }
+  }
+  if (end) {
+    const i1 = find(end, i0);
+    if (i1 === null) {
+      if (isCommentary) return [segs.slice(i0, i0 + 1), "המילים 'עד' לא נמצאו, הובאה ההערה הראשונה בלבד"];
+      return [segs.slice(i0), "המילים 'עד' לא נמצאו, הובא עד סוף הטקסט"];
+    }
+    return [segs.slice(i0, i1 + 1), null];
+  }
+  if (isCommentary) return [segs.slice(i0, i0 + 1), null];
+  return [segs.slice(i0), null];
+}
+
+/* ------------------------------------------------- מקור מתוך הדף עצמו -- */
+async function readDocxLines(buffer) {
+  const zip = await JSZip.loadAsync(buffer);
+  const xml = await zip.file('word/document.xml').async('string');
+  const doc = new DOMParser().parseFromString(xml, 'application/xml');
+  const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+  const lines = [];
+  for (const p of Array.from(doc.getElementsByTagNameNS(W, 'p'))) {
+    let text = '';
+    const runs = [];
+    for (const r of Array.from(p.getElementsByTagNameNS(W, 'r'))) {
+      let t = '';
+      for (const node of Array.from(r.childNodes)) {
+        if (node.localName === 't') t += node.textContent;
+        else if (node.localName === 'tab') t += ' ';
+      }
+      text += t;
+      if (t.trim()) {
+        let bold = false;
+        const rPr = Array.from(r.childNodes).find((c) => c.localName === 'rPr');
+        const b = rPr && Array.from(rPr.childNodes).find((c) => c.localName === 'b');
+        if (b) { const v = b.getAttributeNS(W, 'val'); bold = v !== 'false' && v !== '0'; }
+        runs.push(bold);
+      }
+    }
+    text = text.trim();
+    if (text) lines.push([text, runs.length > 0 && runs.every(Boolean)]);
+  }
+  return lines;
+}
+
+/* מוצא כותרת מודגשת בדף, ומחזיר את הפסקאות שמתחתיה עד הכותרת המודגשת הבאה */
+function textFromDoc(docLines, heading) {
+  const h = norm(heading);
+  let start = null;
+  for (let i = 0; i < docLines.length; i++) {
+    const [t, bold] = docLines[i];
+    const n = norm(t);
+    if (bold && (n === h || (h.length >= 6 && (n.includes(h) || h.includes(n)) && n.length >= 6))) { start = i; break; }
+  }
+  if (start === null) return null;
+  const body = [];
+  for (const [t, bold] of docLines.slice(start + 1)) {
+    if (bold) break;
+    body.push(t);
+  }
+  return body.length ? body : null;
+}
+
+/* ------------------------------------------------------ קישורים לספריא -- */
+function refUrl(ref) {
+  ref = ref.trim();
+  const m = ref.match(/^(.+?) (\d[^ ]*)$/);
+  const path = m ? m[1].replace(/ /g, '_') + '.' + m[2].replace(/:/g, '.') : ref.replace(/ /g, '_');
+  return 'https://www.sefaria.org/' + encodeURIComponent(path).replace(/%2C/g, ',').replace(/%2E/g, '.')
+    .replace(/%3A/g, ':').replace(/%27/g, "'");
+}
+const searchUrl = (q) => 'https://www.sefaria.org/search?q=' + encodeURIComponent(q);
+
+/* ----------------------------------------------------------- עיבוד מקור -- */
+function finish(res) {
+  const src = res.src;
+  if (res.ref) {
+    res.link = refUrl(res.ref);
+    res.linkText = res.ok ? 'פתח בספריא' : 'פתח בספריא לחיפוש ידני';
+  } else if (res.ok && src.sefaria_ref) {
+    res.link = refUrl(src.sefaria_ref);
+    res.linkText = 'פתח בספריא (ההפניה לא אומתה)';
+  } else if (!res.ok) {
+    res.link = searchUrl(`${src.work_he} ${src.location_he}`.trim());
+    res.linkText = 'חיפוש בספריא';
+  }
+  return res;
+}
+
+async function processSource(n, src, docLines) {
+  const res = { n, src, ok: false, chunks: [], origin: '', notes: [], error: '', ref: null, link: null, linkText: '' };
+  if (src.note) res.notes.push(src.note);
+
+  if (src.already_in_doc && docLines && src.doc_heading) {
+    const body = textFromDoc(docLines, src.doc_heading);
+    if (body) { Object.assign(res, { ok: true, chunks: body, origin: 'הדף המקורי' }); return finish(res); }
+    res.notes.push('לא נמצא בדף המקורי תחת הכותרת, נבדק בספריא');
+  }
+
+  const req = (src.sefaria_ref || '').trim();
+  let ref, segs;
+  try {
+    if (LINE_LEVEL.test(req)) {
+      [ref, segs] = await fetchDafCommentary(req);
+    } else {
+      [ref, segs] = await getSegments(src);
+      if (req && letters(ref) !== letters(req)) res.notes.push(`ספריא תיקנה את ההפניה ל-${ref}. כדאי לוודא שזה המקור הנכון`);
+    }
+  } catch (e) {
+    res.error = String((e && e.message) || e);
+    return finish(res);
+  }
+  res.ref = ref;
+  const isCommentary = ref.includes(' on ');
+  let chunks;
+
+  if (src.dibbur_hamatchil) {
+    let hits = pickDibbur(segs, src.dibbur_hamatchil);
+    if (!hits.length && LINE_LEVEL.test(req) && nextAmud(req)) {
+      const nxt = nextAmud(req);
+      try {
+        const [, segs2] = await fetchDafCommentary(nxt);
+        hits = pickDibbur(segs2, src.dibbur_hamatchil);
+        if (hits.length) res.notes.push(`הד"ה לא נמצא ב-${req}, ונמצא ב-${nxt}`);
+      } catch (e) { /* ממשיכים להודעת השגיאה */ }
+    }
+    if (!hits.length) {
+      res.error = `ד"ה '${src.dibbur_hamatchil}' לא נמצא בטקסט של ${ref}. ההערות שכן קיימות שם מתחילות ב: ${firstWords(segs)}`;
+      return finish(res);
+    }
+    if (hits.length > 1) res.notes.push(`נמצאו ${hits.length} הערות שמתחילות בד"ה הזה, הובאו כולן`);
+    chunks = hits;
+  } else if (src.range_start_words || src.range_end_words || isCommentary) {
+    const [c, warn] = pickRange(segs, src.range_start_words, src.range_end_words, isCommentary);
+    if (warn) res.notes.push(warn);
+    chunks = c;
+    if (!(src.range_start_words || src.range_end_words)) chunks = segs; // פירוש בלי תחום: מביאים את כל מה שיש במקום
+    if (!chunks.length) { res.error = warn || 'לא נמצא קטע מתאים'; return finish(res); }
+  } else {
+    chunks = segs;
+  }
+  // מקטעים קצרים (גמרא) מחוברים לפסקה אחת, פירושים נשארים כל אחד בפסקה
+  if (!isCommentary && !src.dibbur_hamatchil) chunks = [chunks.join(' ')];
+  Object.assign(res, { ok: true, chunks, origin: `ספריא (${ref})` });
+  return finish(res);
+}
+
+/* ------------------------------------------------------------- קובץ Word -- */
+const xesc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+function buildDocxXml(results) {
+  const rels = [];
+  const FONT = 'David';
+  const rpr = (size, bold, extra = '') =>
+    `<w:rPr><w:rFonts w:ascii="${FONT}" w:hAnsi="${FONT}" w:cs="${FONT}"/>${bold ? '<w:b/><w:bCs/>' : ''}${extra}` +
+    `<w:sz w:val="${size * 2}"/><w:szCs w:val="${size * 2}"/>${extra.includes('w:u') ? '<w:u w:val="single"/>' : ''}<w:rtl/></w:rPr>`;
+  const para = (text, size = 12, bold = false) =>
+    `<w:p><w:pPr><w:bidi/><w:spacing w:after="120"/></w:pPr><w:r>${rpr(size, bold)}<w:t xml:space="preserve">${xesc(text)}</w:t></w:r></w:p>`;
+  const linkPara = (text, url) => {
+    const id = 'rId' + (rels.length + 1);
+    rels.push([id, url]);
+    return `<w:p><w:pPr><w:bidi/><w:spacing w:after="120"/></w:pPr><w:hyperlink r:id="${id}"><w:r>` +
+      `<w:rPr><w:rFonts w:ascii="${FONT}" w:hAnsi="${FONT}" w:cs="${FONT}"/><w:color w:val="0563C1"/><w:sz w:val="20"/><w:szCs w:val="20"/><w:u w:val="single"/><w:rtl/></w:rPr>` +
+      `<w:t xml:space="preserve">${xesc(text)}</w:t></w:r></w:hyperlink></w:p>`;
+  };
+
+  const failed = results.filter((r) => !r.ok);
+  let body = para('דף מקורות מלא', 20, true);
+  let summary = `הובאו ${results.length - failed.length} מתוך ${results.length} מקורות.`;
+  if (failed.length) summary += ' לא נמצאו: ' + failed.map((r) => r.n).join(', ') + '.';
+  body += para(summary, 11);
+
+  let lastSection = Symbol('none');
+  for (const r of results) {
+    const s = r.src;
+    const section = s.section || null;
+    if (section !== lastSection) {
+      lastSection = section;
+      if (section) body += para(section, 16, true);
+    }
+    body += para(`${r.n}. ${s.work_he} - ${s.location_he}`, 14, true);
+    if (r.link) body += linkPara(r.linkText, r.link);
+    if (r.ok) {
+      for (const c of r.chunks) body += para(c, 12);
+      body += para('מקור הטקסט: ' + r.origin, 9);
+    } else {
+      body += para('[לא נמצא. יש להוסיף ידנית] ' + r.error, 11);
+    }
+    for (const note of r.notes) body += para('הערה: ' + note, 9);
+  }
+
+  const NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
+  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ${NS}><w:body>${body}` +
+    `<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+  const relsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">` +
+    rels.map(([id, url]) => `<Relationship Id="${id}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${xesc(url)}" TargetMode="External"/>`).join('') +
+    `</Relationships>`;
+  return { documentXml, relsXml };
+}
+
+async function buildDocxBlob(results) {
+  const { documentXml, relsXml } = buildDocxXml(results);
+  const zip = new JSZip();
+  zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>`);
+  zip.file('_rels/.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`);
+  zip.file('word/document.xml', documentXml);
+  zip.file('word/_rels/document.xml.rels', relsXml);
+  return zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+}
+
+/* ------------------------------------------------------------ ממשק המשתמש -- */
+const $ = (id) => document.getElementById(id);
+const state = { sources: null, docLines: null, results: [], docName: '', baseName: 'מקורות' };
+
+function setStatus(text, warn = false) {
+  const el = $('status');
+  el.textContent = text;
+  el.classList.toggle('warn', warn);
+}
+
+function refresh() {
+  const run = $('run');
+  if (!state.sources) { setStatus(''); run.disabled = true; return; }
+  const inSheet = state.sources.filter((s) => s.already_in_doc).length;
+  if (inSheet && !state.docLines) {
+    setStatus(`ברשימה יש ${inSheet} מקורות שכבר מופיעים בדף המקורי. העלה גם את הדף המקורי, כדי שיילקחו ממנו ולא מספריא.`, true);
+    run.disabled = true;
+    return;
+  }
+  setStatus(`נטענו ${state.sources.length} מקורות${inSheet ? `, מהם ${inSheet} מתוך הדף המקורי` : ''}.`);
+  run.disabled = false;
+}
+
+function wireDrop(zoneId, inputId, onFile) {
+  const zone = $(zoneId), input = $(inputId);
+  input.addEventListener('change', () => input.files[0] && onFile(input.files[0]));
+  ['dragenter', 'dragover'].forEach((ev) => zone.addEventListener(ev, (e) => { e.preventDefault(); zone.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach((ev) => zone.addEventListener(ev, (e) => { e.preventDefault(); zone.classList.remove('over'); }));
+  zone.addEventListener('drop', (e) => { const f = e.dataTransfer.files[0]; if (f) onFile(f); });
+}
+
+wireDrop('refsDrop', 'refsFile', async (file) => {
+  try {
+    const data = JSON.parse((await file.text()).replace(/^\uFEFF/, ''));
+    if (!Array.isArray(data) || !data.length || !data.every((s) => s && s.work_he !== undefined)) throw new Error('bad');
+    state.sources = data;
+    state.baseName = file.name.replace(/\.json$/i, '').replace(/^refs_?/i, '') || 'מקורות';
+    $('refsName').textContent = file.name;
+  } catch (e) {
+    state.sources = null;
+    $('refsName').textContent = '';
+    setStatus('הקובץ לא נראה כמו רשימת מקורות (refs.json). בדוק שזה הקובץ הנכון.', true);
+    $('run').disabled = true;
+    return;
+  }
+  refresh();
+});
+
+wireDrop('docDrop', 'docFile', async (file) => {
+  try {
+    state.docLines = await readDocxLines(await file.arrayBuffer());
+    $('docName').textContent = file.name;
+  } catch (e) {
+    state.docLines = null;
+    $('docName').textContent = '';
+    setStatus('לא הצלחתי לקרוא את קובץ ה-docx. בדוק שזה קובץ Word תקין.', true);
+    return;
+  }
+  refresh();
+});
+
+function renderCard(r, showSection) {
+  const frag = document.createDocumentFragment();
+  if (showSection && r.src.section) {
+    const h = document.createElement('h2');
+    h.textContent = r.src.section;
+    frag.appendChild(h);
+  }
+  const art = document.createElement('article');
+  art.className = 'src ' + (r.ok ? 'ok' : 'fail');
+  const margin = document.createElement('aside');
+  margin.className = 'margin';
+  for (const [cls, text] of [['num', r.n], ['work', r.src.work_he], ['loc', r.src.location_he]]) {
+    const span = document.createElement('span');
+    span.className = cls; span.textContent = text;
+    margin.appendChild(span);
+  }
+  const body = document.createElement('div');
+  body.className = 'body';
+  const add = (tag, cls, text) => { const el = document.createElement(tag); el.className = cls; el.textContent = text; body.appendChild(el); return el; };
+  if (r.ok) {
+    r.chunks.forEach((c) => add('p', 'txt', c));
+    add('p', 'meta', 'מקור הטקסט: ' + r.origin);
+  } else {
+    add('p', 'err', 'לא נמצא. יש להוסיף ידנית.');
+    add('p', 'meta', r.error);
+  }
+  r.notes.forEach((n) => add('p', 'note', n));
+  if (r.link) {
+    const a = document.createElement('a');
+    a.className = 'open'; a.href = r.link; a.target = '_blank'; a.rel = 'noopener'; a.textContent = r.linkText;
+    const p = document.createElement('p'); p.className = 'meta'; p.appendChild(a); body.appendChild(p);
+  }
+  art.appendChild(margin); art.appendChild(body);
+  frag.appendChild(art);
+  return frag;
+}
+
+function showSummary() {
+  const failed = state.results.filter((r) => !r.ok);
+  let text = `הובאו ${state.results.length - failed.length} מתוך ${state.results.length} מקורות.`;
+  if (failed.length) text += ' לא נמצאו: ' + failed.map((r) => r.n).join(', ') + '.';
+  $('summary').textContent = text;
+}
+
+$('run').addEventListener('click', async () => {
+  const run = $('run');
+  run.disabled = true;
+  $('dl').disabled = true;
+  $('list').textContent = '';
+  $('results').hidden = true;
+  state.results = [];
+  setStatus('');
+
+  const pending = state.sources.some((s) => !(s.already_in_doc && state.docLines));
+  if (pending) {
+    try { await fetchJson(`${API}/texts/Genesis.1.1?context=0`); }
+    catch (e) {
+      setStatus('לא הצלחתי להתחבר לספריא מהדפדפן. בדוק חיבור לאינטרנט. אם זה נמשך, ייתכן שהדפדפן חוסם את הבקשה, ואז צריך להריץ את הסקריפט בפייתון.', true);
+      run.disabled = false;
+      return;
+    }
+  }
+
+  $('progress').hidden = false;
+  $('results').hidden = false;
+  let lastSection = Symbol('none');
+  const total = state.sources.length;
+  for (let i = 0; i < total; i++) {
+    $('progressText').textContent = `מביא מקור ${i + 1} מתוך ${total}`;
+    $('progressBar').style.width = (i / total * 100) + '%';
+    const r = await processSource(i + 1, state.sources[i], state.docLines);
+    state.results.push(r);
+    const section = r.src.section || null;
+    $('list').appendChild(renderCard(r, section !== lastSection));
+    lastSection = section;
+    showSummary();
+    await sleep(150);
+  }
+  $('progressBar').style.width = '100%';
+  $('progressText').textContent = 'הסתיים';
+  $('dl').disabled = false;
+  run.disabled = false;
+});
+
+$('dl').addEventListener('click', async () => {
+  const blob = await buildDocxBlob(state.results);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `דף_מקורות_${state.baseName}.docx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+});
+$('print').addEventListener('click', () => window.print());
+
+/* חשיפה לבדיקות */
+window.MK = { processSource, readDocxLines, buildDocxBlob, buildDocxXml, refUrl, pickRange, pickDibbur, norm, skel, textFromDoc };
+</script>
+</body>
+</html>

@@ -145,7 +145,7 @@ def pick_dibbur(segs, dh):
     return hits
 
 
-def pick_range(segs, start, end, is_commentary):
+def pick_range(segs, start, end, is_commentary, to_end=False):
     """חיתוך לפי 'מהמילים ... עד ...'. החיתוך הוא ברמת מקטע, לא ברמת מילה."""
     def find(words, begin):
         for probe in variants(words):
@@ -168,9 +168,9 @@ def pick_range(segs, start, end, is_commentary):
                 return segs[i0:i0 + 1], "המילים 'עד' לא נמצאו, הובאה ההערה הראשונה בלבד"
             return segs[i0:], "המילים 'עד' לא נמצאו, הובא עד סוף הטקסט"
         return segs[i0:i1 + 1], None
-    if is_commentary:
+    if is_commentary and not to_end:
         return segs[i0:i0 + 1], None  # בפירוש, מקטע אחד הוא הערה אחת
-    return segs[i0:], None
+    return segs[i0:], None  # גמרא, או פירוש עם to_end: עד סוף הטקסט
 
 
 # רש"י ותוספות בנויים בספריא לפי שורות בגמרא. הפניה לדף שלם מחזירה רק את השורה הראשונה,
@@ -409,7 +409,7 @@ def _process(n, src, doc_lines):
             res["notes"].append(f"נמצאו {len(hits)} הערות שמתחילות בד\"ה הזה, הובאו כולן")
         chunks = hits
     elif src.get("range_start_words") or src.get("range_end_words") or is_commentary:
-        chunks, warn = pick_range(segs, src.get("range_start_words"), src.get("range_end_words"), is_commentary)
+        chunks, warn = pick_range(segs, src.get("range_start_words"), src.get("range_end_words"), is_commentary, src.get("to_end"))
         if warn:
             res["notes"].append(warn)
         if not (src.get("range_start_words") or src.get("range_end_words")):

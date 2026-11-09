@@ -306,7 +306,7 @@ function pickDibbur(segs, dh) {
 }
 
 /* חיתוך לפי "מהמילים ... עד ...". החיתוך הוא ברמת מקטע, לא ברמת מילה. */
-function pickRange(segs, start, end, isCommentary) {
+function pickRange(segs, start, end, isCommentary, toEnd = false) {
   const find = (words, begin) => {
     for (const probe of variants(words)) {
       for (let i = begin; i < segs.length; i++) if (skel(segs[i]).includes(probe)) return i;
@@ -329,7 +329,7 @@ function pickRange(segs, start, end, isCommentary) {
     }
     return [segs.slice(i0, i1 + 1), null];
   }
-  if (isCommentary) return [segs.slice(i0, i0 + 1), null];
+  if (isCommentary && !toEnd) return [segs.slice(i0, i0 + 1), null];
   return [segs.slice(i0), null];
 }
 
@@ -452,7 +452,7 @@ async function processSource(n, src, docLines) {
     if (hits.length > 1) res.notes.push(`נמצאו ${hits.length} הערות שמתחילות בד"ה הזה, הובאו כולן`);
     chunks = hits;
   } else if (src.range_start_words || src.range_end_words || isCommentary) {
-    const [c, warn] = pickRange(segs, src.range_start_words, src.range_end_words, isCommentary);
+    const [c, warn] = pickRange(segs, src.range_start_words, src.range_end_words, isCommentary, !!src.to_end);
     if (warn) res.notes.push(warn);
     chunks = c;
     if (!(src.range_start_words || src.range_end_words)) chunks = segs; // פירוש בלי תחום: מביאים את כל מה שיש במקום

@@ -187,6 +187,20 @@ def next_amud(ref):
     return f"{base}{num}b" if side == "a" else f"{base}{int(num) + 1}a"
 
 
+def prev_amud(ref):
+    m = re.match(r"^(.+ )(\d+)([ab])$", ref)
+    if not m:
+        return None
+    base, num, side = m.groups()
+    if side == "b":
+        return f"{base}{num}a"
+    return f"{base}{int(num) - 1}b" if int(num) > 2 else None
+
+
+def adjacent_amudim(ref):
+    return [x for x in (next_amud(ref), prev_amud(ref)) if x]
+
+
 def book(ref):
     """שם הספר בלבד (בלי הספרות ואותיות הדף), להשוואה בין הפניות."""
     return re.sub(r"[^A-Za-z]", "", re.split(r"\d", ref, maxsplit=1)[0]).lower()
@@ -392,15 +406,16 @@ def _process(n, src, doc_lines):
     is_commentary = " on " in ref
     if src.get("dibbur_hamatchil"):
         hits = pick_dibbur(segs, src["dibbur_hamatchil"])
-        if not hits and LINE_LEVEL.match(req) and next_amud(req):
-            nxt = next_amud(req)
-            try:
-                _, segs2 = fetch_daf_commentary(nxt)
+        if not hits and LINE_LEVEL.match(req):
+            for alt in adjacent_amudim(req):  # העמוד הבא, ואחר כך הקודם
+                try:
+                    _, segs2 = fetch_daf_commentary(alt)
+                except Exception:  # noqa: BLE001
+                    continue
                 hits = pick_dibbur(segs2, src["dibbur_hamatchil"])
                 if hits:
-                    res["notes"].append(f"הד\"ה לא נמצא ב-{req}, ונמצא ב-{nxt}")
-            except Exception:  # noqa: BLE001
-                pass
+                    res["notes"].append(f"הד\"ה לא נמצא ב-{req}, ונמצא ב-{alt}")
+                    break
         if not hits:
             res["error"] = (f"ד\"ה '{src['dibbur_hamatchil']}' לא נמצא בטקסט של {ref}. "
                             f"ההערות שכן קיימות שם מתחילות ב: {first_words(segs)}")
@@ -410,6 +425,17 @@ def _process(n, src, doc_lines):
         chunks = hits
     elif src.get("range_start_words") or src.get("range_end_words") or is_commentary:
         chunks, warn = pick_range(segs, src.get("range_start_words"), src.get("range_end_words"), is_commentary, src.get("to_end"))
+        if not chunks and LINE_LEVEL.match(req):
+            for alt in adjacent_amudim(req):  # רש"י/תוספות: מחפשים גם בעמוד הסמוך
+                try:
+                    _, segs2 = fetch_daf_commentary(alt)
+                except Exception:  # noqa: BLE001
+                    continue
+                c2, w2 = pick_range(segs2, src.get("range_start_words"), src.get("range_end_words"), is_commentary, src.get("to_end"))
+                if c2:
+                    chunks, warn = c2, w2
+                    res["notes"].append(f"נמצא ב-{alt} ולא ב-{req}")
+                    break
         if warn:
             res["notes"].append(warn)
         if not (src.get("range_start_words") or src.get("range_end_words")):

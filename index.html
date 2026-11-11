@@ -292,6 +292,13 @@ function nextAmud(ref) {
   if (!m) return null;
   return m[3] === 'a' ? `${m[1]}${m[2]}b` : `${m[1]}${+m[2] + 1}a`;
 }
+function prevAmud(ref) {
+  const m = ref.match(/^(.+ )(\d+)([ab])$/);
+  if (!m) return null;
+  if (m[3] === 'b') return `${m[1]}${m[2]}a`;
+  return +m[2] > 2 ? `${m[1]}${+m[2] - 1}b` : null;
+}
+const adjacentAmudim = (ref) => [nextAmud(ref), prevAmud(ref)].filter(Boolean);
 const firstWords = (segs, k = 15) => segs.slice(0, k).map((s) => s.split(/\s+/).slice(0, 3).join(' ')).join(' | ');
 const letters = (s) => s.split(/\d/)[0].replace(/[^A-Za-z]/g, '').toLowerCase(); // שם הספר בלבד
 
@@ -437,13 +444,14 @@ async function processSource(n, src, docLines) {
 
   if (src.dibbur_hamatchil) {
     let hits = pickDibbur(segs, src.dibbur_hamatchil);
-    if (!hits.length && LINE_LEVEL.test(req) && nextAmud(req)) {
-      const nxt = nextAmud(req);
-      try {
-        const [, segs2] = await fetchDafCommentary(nxt);
-        hits = pickDibbur(segs2, src.dibbur_hamatchil);
-        if (hits.length) res.notes.push(`הד"ה לא נמצא ב-${req}, ונמצא ב-${nxt}`);
-      } catch (e) { /* ממשיכים להודעת השגיאה */ }
+    if (!hits.length && LINE_LEVEL.test(req)) {
+      for (const alt of adjacentAmudim(req)) { // העמוד הבא, ואחר כך הקודם
+        try {
+          const [, segs2] = await fetchDafCommentary(alt);
+          hits = pickDibbur(segs2, src.dibbur_hamatchil);
+          if (hits.length) { res.notes.push(`הד"ה לא נמצא ב-${req}, ונמצא ב-${alt}`); break; }
+        } catch (e) { /* ממשיכים לעמוד הבא */ }
+      }
     }
     if (!hits.length) {
       res.error = `ד"ה '${src.dibbur_hamatchil}' לא נמצא בטקסט של ${ref}. ההערות שכן קיימות שם מתחילות ב: ${firstWords(segs)}`;
@@ -452,7 +460,16 @@ async function processSource(n, src, docLines) {
     if (hits.length > 1) res.notes.push(`נמצאו ${hits.length} הערות שמתחילות בד"ה הזה, הובאו כולן`);
     chunks = hits;
   } else if (src.range_start_words || src.range_end_words || isCommentary) {
-    const [c, warn] = pickRange(segs, src.range_start_words, src.range_end_words, isCommentary, !!src.to_end);
+    let [c, warn] = pickRange(segs, src.range_start_words, src.range_end_words, isCommentary, !!src.to_end);
+    if (!c.length && LINE_LEVEL.test(req)) {
+      for (const alt of adjacentAmudim(req)) { // רש"י/תוספות: מחפשים גם בעמוד הסמוך
+        try {
+          const [, segs2] = await fetchDafCommentary(alt);
+          const [c2, w2] = pickRange(segs2, src.range_start_words, src.range_end_words, isCommentary, !!src.to_end);
+          if (c2.length) { c = c2; warn = w2; res.notes.push(`נמצא ב-${alt} ולא ב-${req}`); break; }
+        } catch (e) { /* ממשיכים */ }
+      }
+    }
     if (warn) res.notes.push(warn);
     chunks = c;
     if (!(src.range_start_words || src.range_end_words)) chunks = segs; // פירוש בלי תחום: מביאים את כל מה שיש במקום
